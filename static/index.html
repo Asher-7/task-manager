@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .auth-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .auth-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .hidden {
+            display: none;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        .stat-card p {
+            opacity: 0.9;
+        }
+        .tasks-section {
+            margin-top: 30px;
+        }
+        .task-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .task-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .task-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.todo { background: #ffc107; color: #000; }
+        .badge.in_progress { background: #17a2b8; color: white; }
+        .badge.done { background: #28a745; color: white; }
+        .badge.low { background: #6c757d; color: white; }
+        .badge.medium { background: #ffc107; color: #000; }
+        .badge.high { background: #fd7e14; color: white; }
+        .badge.urgent { background: #dc3545; color: white; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .comments-section, .activity-section {
+            margin-top: 30px;
+        }
+        .comment-card, .activity-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        .comment-header, .activity-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .comment-content {
+            color: #333;
+            line-height: 1.6;
+        }
+        .comment-form {
+            margin-top: 20px;
+        }
+        .comment-form textarea {
+            width: 100%;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+        .activity-action {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .activity-details {
+            font-size: 13px;
+            color: #555;
+            margin-top: 5px;
+        }
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .user-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Task Manager</h1>
+        <p class="subtitle">Manage your tasks and projects efficiently</p>
+
+        <div id="message"></div>
+        <div id="userInfo" class="user-info hidden"></div>
+
+        <!-- Auth Section -->
+        <div id="authSection" class="auth-section">
+            <h2>Login / Register</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button onclick="register()">Register</button>
+            <button onclick="login()" class="secondary">Login</button>
+        </div>
+
+        <!-- Main App Section -->
+        <div id="appSection" class="hidden">
+            <button onclick="logout()" class="secondary" style="float: right;">Logout</button>
+            
+            <h2>Statistics</h2>
+            <div id="stats" class="stats"></div>
+
+            <h2>Create New Task</h2>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="taskTitle" placeholder="Task title">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="taskDescription" placeholder="Task description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select id="taskPriority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="taskStatus">
+                    <option value="todo" selected>To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="done">Done</option>
+                </select>
+            </div>
+            <button onclick="createTask()">Create Task</button>
+
+            <div class="tasks-section">
+                <h2>Your Tasks</h2>
+                <div id="tasksList"></div>
+            </div>
+        </div>
+
+        <!-- Task Details Modal -->
+        <div id="taskModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTaskTitle"></h2>
+                    <span class="close" onclick="closeTaskModal()">&times;</span>
+                </div>
+                <div id="modalTaskDetails"></div>
+                
+                <div class="comments-section">
+                    <h3>💬 Comments</h3>
+                    <div id="commentsList"></div>
+                    <div class="comment-form">
+                        <textarea id="newComment" placeholder="Add a comment..."></textarea>
+                        <button onclick="addComment()">Add Comment</button>
+                    </div>
+                </div>
+
+                <div class="activity-section">
+                    <h3>📋 Activity Log</h3>
+                    <div id="activityList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentTaskId = null;
+
+        function showMessage(text, type = 'success') {
+            const msg = document.getElementById('message');
+            msg.className = `message ${type}`;
+            msg.textContent = text;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 5000);
+        }
+
+        async function register() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentUser = data;
+                    showMessage('Registration successful!');
+                    showApp();
+                } else {
+                    showMessage(data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentUser = data;
+                    showMessage('Login successful!');
+                    showApp();
+                } else {
+                    showMessage(data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/auth/logout', { method: 'POST' });
+                currentUser = null;
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('appSection').classList.add('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                showMessage('Logged out successfully');
+            } catch (error) {
+                showMessage('Logout error: ' + error.message, 'error');
+            }
+        }
+
+        function showApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            const userInfo = document.getElementById('userInfo');
+            userInfo.classList.remove('hidden');
+            userInfo.innerHTML = `<strong>Welcome, ${currentUser.username}!</strong> (${currentUser.email})`;
+            loadStats();
+            loadTasks();
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/tasks/stats');
+                const data = await response.json();
+                
+                const statsHtml = `
+                    <div class="stat-card">
+                        <h3>${data.total}</h3>
+                        <p>Total Tasks</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.by_status.todo}</h3>
+                        <p>To Do</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.by_status.in_progress}</h3>
+                        <p>In Progress</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.by_status.done}</h3>
+                        <p>Completed</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${data.completion_rate}%</h3>
+                        <p>Completion Rate</p>
+                    </div>
+                `;
+                document.getElementById('stats').innerHTML = statsHtml;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch('/tasks/');
+                const data = await response.json();
+                
+                if (data.tasks.length === 0) {
+                    document.getElementById('tasksList').innerHTML = '<p>No tasks yet. Create your first task above!</p>';
+                    return;
+                }
+
+                const tasksHtml = data.tasks.map(task => `
+                    <div class="task-card" onclick="openTaskModal(${task.id})" style="cursor: pointer;">
+                        <h3>${task.title}</h3>
+                        ${task.description ? `<p>${task.description}</p>` : ''}
+                        <div class="task-meta">
+                            <span class="badge ${task.status}">${task.status.replace('_', ' ')}</span>
+                            <span class="badge ${task.priority}">${task.priority}</span>
+                            <span>Created: ${new Date(task.created_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('tasksList').innerHTML = tasksHtml;
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        async function createTask() {
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            const priority = document.getElementById('taskPriority').value;
+            const status = document.getElementById('taskStatus').value;
+
+            if (!title) {
+                showMessage('Please enter a task title', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/tasks/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, priority, status })
+                });
+
+                if (response.ok) {
+                    showMessage('Task created successfully!');
+                    document.getElementById('taskTitle').value = '';
+                    document.getElementById('taskDescription').value = '';
+                    loadStats();
+                    loadTasks();
+                } else {
+                    const data = await response.json();
+                    showMessage(data.error || 'Failed to create task', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function openTaskModal(taskId) {
+            currentTaskId = taskId;
+            const modal = document.getElementById('taskModal');
+            modal.style.display = 'block';
+
+            try {
+                // Load task details
+                const taskResponse = await fetch(`/tasks/${taskId}`);
+                const task = await taskResponse.json();
+                
+                document.getElementById('modalTaskTitle').textContent = task.title;
+                document.getElementById('modalTaskDetails').innerHTML = `
+                    <p><strong>Description:</strong> ${task.description || 'No description'}</p>
+                    <p><strong>Status:</strong> <span class="badge ${task.status}">${task.status.replace('_', ' ')}</span></p>
+                    <p><strong>Priority:</strong> <span class="badge ${task.priority}">${task.priority}</span></p>
+                    <p><strong>Created:</strong> ${new Date(task.created_at).toLocaleString()}</p>
+                    ${task.due_date ? `<p><strong>Due:</strong> ${new Date(task.due_date).toLocaleString()}</p>` : ''}
+                `;
+
+                // Load comments
+                await loadComments(taskId);
+                
+                // Load activity
+                await loadActivity(taskId);
+            } catch (error) {
+                showMessage('Error loading task details: ' + error.message, 'error');
+            }
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').style.display = 'none';
+            currentTaskId = null;
+            document.getElementById('newComment').value = '';
+        }
+
+        async function loadComments(taskId) {
+            try {
+                const response = await fetch(`/api/task/${taskId}/comments`);
+                const data = await response.json();
+                
+                if (data.comments.length === 0) {
+                    document.getElementById('commentsList').innerHTML = '<p style="color: #999;">No comments yet. Be the first to comment!</p>';
+                    return;
+                }
+
+                const commentsHtml = data.comments.map(comment => `
+                    <div class="comment-card">
+                        <div class="comment-header">
+                            <strong>${comment.username}</strong>
+                            <span>${new Date(comment.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="comment-content">${comment.content}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('commentsList').innerHTML = commentsHtml;
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
+        async function loadActivity(taskId) {
+            try {
+                const response = await fetch(`/api/task/${taskId}/activity`);
+                const data = await response.json();
+                
+                if (data.activities.length === 0) {
+                    document.getElementById('activityList').innerHTML = '<p style="color: #999;">No activity yet.</p>';
+                    return;
+                }
+
+                const activityHtml = data.activities.map(activity => {
+                    let actionText = activity.action;
+                    let details = '';
+                    
+                    if (activity.action === 'updated' && activity.field_name) {
+                        actionText = `updated ${activity.field_name}`;
+                        details = `<div class="activity-details">Changed from "${activity.old_value || 'empty'}" to "${activity.new_value}"</div>`;
+                    } else if (activity.action === 'commented') {
+                        details = `<div class="activity-details">"${activity.new_value}..."</div>`;
+                    }
+                    
+                    return `
+                        <div class="activity-card">
+                            <div class="activity-header">
+                                <span><strong>${activity.username}</strong> <span class="activity-action">${actionText}</span></span>
+                                <span>${new Date(activity.created_at).toLocaleString()}</span>
+                            </div>
+                            ${details}
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('activityList').innerHTML = activityHtml;
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        async function addComment() {
+            const content = document.getElementById('newComment').value.trim();
+            if (!content) {
+                showMessage('Please enter a comment', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/task/${currentTaskId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    document.getElementById('newComment').value = '';
+                    await loadComments(currentTaskId);
+                    await loadActivity(currentTaskId);
+                    showMessage('Comment added successfully!');
+                } else {
+                    const data = await response.json();
+                    showMessage(data.error || 'Failed to add comment', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeTaskModal();
+            }
+        }
+
+        // Check if already logged in
+        fetch('/auth/me')
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    currentUser = data;
+                    showApp();
+                }
+            })
+            .catch(() => {});
+    </script>
+</body>
+</html>
