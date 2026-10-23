@@ -50,3 +50,31 @@ def test_logout_clears_session(auth_client):
     assert auth_client.get("/auth/me").status_code == 200
     auth_client.post("/auth/logout")
     assert auth_client.get("/auth/me").status_code == 401
+
+
+def test_list_users_requires_auth(client):
+    assert client.get("/auth/users").status_code == 401
+
+
+def test_list_users_returns_only_id_and_username(auth_client, app):
+    other = app.test_client()
+    other.post("/auth/register", json={
+        "username": "aaron", "email": "aaron@example.com", "password": "pw",
+    })
+
+    users = auth_client.get("/auth/users").get_json()["users"]
+    assert [u["username"] for u in users] == ["aaron", "alice"]
+    assert all(set(u) == {"id", "username"} for u in users)
+
+
+def test_assign_task_to_listed_user(auth_client, app):
+    other = app.test_client()
+    other.post("/auth/register", json={
+        "username": "aaron", "email": "aaron@example.com", "password": "pw",
+    })
+    aaron = next(u for u in auth_client.get("/auth/users").get_json()["users"]
+                 if u["username"] == "aaron")
+
+    res = auth_client.post("/tasks/", json={"title": "t", "assigned_to": aaron["id"]})
+    assert res.status_code == 201
+    assert res.get_json()["assigned_to"] == aaron["id"]

@@ -180,6 +180,12 @@ POST /auth/logout
 GET /auth/me
 ```
 
+#### List Users
+```http
+GET /auth/users
+```
+Returns `{"users": [{"id": 1, "username": "john_doe"}]}`, sorted by username. Use it to pick an `assigned_to` value. Requires login; emails are not exposed.
+
 ### Task Endpoints
 
 #### List Tasks

@@ -59,3 +59,12 @@ def me():
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify(user.to_dict()), 200
+
+
+@auth_bp.route("/users", methods=["GET"])
+def list_users():
+    """List users (id and username only) so tasks can be assigned."""
+    if not session.get("user_id"):
+        return jsonify({"error": "Not authenticated"}), 401
+    users = User.query.order_by(User.username).all()
+    return jsonify({"users": [{"id": u.id, "username": u.username} for u in users]}), 200
