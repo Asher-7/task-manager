@@ -184,8 +184,10 @@ GET /auth/me
 
 #### List Tasks
 ```http
-GET /tasks/?status=todo&priority=high&project_id=1&assigned_to_me=true
+GET /tasks/?status=todo&priority=high&project_id=1&assigned_to_me=true&q=login
 ```
+
+`q` performs a case-insensitive search on task title and description and can be combined with the other filters.
 
 #### Create Task
 ```http

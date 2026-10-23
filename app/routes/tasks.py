@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from datetime import datetime
+from sqlalchemy import or_
 from ..models import Task, Project, ActivityLog
 from ..database import db
 # Activity logging enabled
@@ -24,6 +25,7 @@ def list_tasks():
     priority = request.args.get("priority")
     project_id = request.args.get("project_id", type=int)
     assigned_to_me = request.args.get("assigned_to_me", "false").lower() == "true"
+    search = request.args.get("q", "").strip()
 
     query = Task.query.filter_by(created_by=user_id)
 
@@ -35,6 +37,15 @@ def list_tasks():
         query = query.filter_by(priority=priority)
     if project_id:
         query = query.filter_by(project_id=project_id)
+    if search:
+        escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
+        query = query.filter(
+            or_(
+                Task.title.ilike(pattern, escape="\\"),
+                Task.description.ilike(pattern, escape="\\"),
+            )
+        )
 
     tasks = query.order_by(Task.created_at.desc()).all()
     return jsonify({"total": len(tasks), "tasks": [t.to_dict() for t in tasks]}), 200
