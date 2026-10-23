@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
-from datetime import datetime
-from sqlalchemy import or_
+from datetime import datetime, timedelta
+from sqlalchemy import case, or_
 from ..models import Task, Project, ActivityLog
 from ..database import db
 # Activity logging enabled
@@ -9,6 +9,8 @@ tasks_bp = Blueprint("tasks", __name__)
 
 VALID_STATUSES = {"todo", "in_progress", "done"}
 VALID_PRIORITIES = {"low", "medium", "high", "urgent"}
+SORT_FIELDS = {"created_at", "due_date", "title", "status", "priority"}
+MAX_PER_PAGE = 100
 
 
 def current_user_id():
@@ -26,6 +28,19 @@ def list_tasks():
     project_id = request.args.get("project_id", type=int)
     assigned_to_me = request.args.get("assigned_to_me", "false").lower() == "true"
     search = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort_by", "created_at")
+    order = request.args.get("order", "desc").lower()
+    page = request.args.get("page", type=int)
+    per_page = request.args.get("per_page", type=int)
+
+    if sort_by not in SORT_FIELDS:
+        return jsonify({"error": f"sort_by must be one of {sorted(SORT_FIELDS)}"}), 400
+    if order not in ("asc", "desc"):
+        return jsonify({"error": "order must be 'asc' or 'desc'"}), 400
+    if page is not None and page < 1:
+        return jsonify({"error": "page must be 1 or greater"}), 400
+    if per_page is not None and not 1 <= per_page <= MAX_PER_PAGE:
+        return jsonify({"error": f"per_page must be between 1 and {MAX_PER_PAGE}"}), 400
 
     query = Task.query.filter_by(created_by=user_id)
 
@@ -47,8 +62,56 @@ def list_tasks():
             )
         )
 
-    tasks = query.order_by(Task.created_at.desc()).all()
-    return jsonify({"total": len(tasks), "tasks": [t.to_dict() for t in tasks]}), 200
+    if sort_by == "priority":
+        sort_column = case(
+            {"low": 1, "medium": 2, "high": 3, "urgent": 4}, value=Task.priority, else_=0
+        )
+    else:
+        sort_column = getattr(Task, sort_by)
+    direction = sort_column.asc() if order == "asc" else sort_column.desc()
+
+    # Tasks without a due date always sort last; id keeps the order stable across pages.
+    if sort_by == "due_date":
+        query = query.order_by(Task.due_date.is_(None), direction, Task.id)
+    else:
+        query = query.order_by(direction, Task.id)
+
+    total = query.count()
+    if page is None and per_page is None:
+        tasks = query.all()
+        return jsonify({"total": total, "tasks": [t.to_dict() for t in tasks]}), 200
+
+    page = page or 1
+    per_page = per_page or 20
+    tasks = query.offset((page - 1) * per_page).limit(per_page).all()
+    return jsonify({
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page,
+        "tasks": [t.to_dict() for t in tasks],
+    }), 200
+
+
+@tasks_bp.route("/due-soon", methods=["GET"])
+def due_soon():
+    """Open tasks due within the next N days (default 7), including overdue ones."""
+    user_id = current_user_id()
+    if not user_id:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    days = request.args.get("days", default=7, type=int)
+    if not 1 <= days <= 365:
+        return jsonify({"error": "days must be between 1 and 365"}), 400
+
+    cutoff = datetime.utcnow() + timedelta(days=days)
+    tasks = (
+        Task.query.filter_by(created_by=user_id)
+        .filter(Task.status != "done", Task.due_date.isnot(None), Task.due_date <= cutoff)
+        .order_by(Task.due_date.asc(), Task.id)
+        .all()
+    )
+    return jsonify({"days": days, "total": len(tasks), "tasks": [t.to_dict() for t in tasks]}), 200
 
 
 @tasks_bp.route("/", methods=["POST"])

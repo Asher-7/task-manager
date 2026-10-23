@@ -195,6 +195,29 @@ GET /tasks/?status=todo&priority=high&project_id=1&assigned_to_me=true&q=login
 
 `q` performs a case-insensitive search on task title and description and can be combined with the other filters.
 
+Sorting and pagination (all optional):
+
+| Parameter | Values | Default |
+|---|---|---|
+| `sort_by` | `created_at`, `due_date`, `title`, `status`, `priority` | `created_at` |
+| `order` | `asc`, `desc` | `desc` |
+| `page` | 1 or greater | - |
+| `per_page` | 1-100 | 20 (when `page` is used) |
+
+```http
+GET /tasks/?sort_by=priority&order=desc&page=1&per_page=10
+```
+
+- `priority` sorts by severity (low < medium < high < urgent), not alphabetically.
+- Tasks with no due date always sort last when sorting by `due_date`.
+- Without `page` or `per_page` the response is unchanged: `{"total", "tasks"}`. With them it also includes `page`, `per_page` and `pages`.
+
+#### Tasks Due Soon
+```http
+GET /tasks/due-soon?days=7
+```
+Returns your open (not `done`) tasks due within the next `days` days (1-365, default 7), including overdue ones, soonest first.
+
 #### Create Task
 ```http
 POST /tasks/
